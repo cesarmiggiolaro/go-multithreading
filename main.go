@@ -6,35 +6,30 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 )
 
-type CepServer1 struct {
-	Cep     string `json:"code"`
-	State   string `json:"state"`
-	City    string `json:"city"`
-	Address string `json:"address"`
-	Server  string
-}
-
-type CepServer2 struct {
-	Cep     string `json:"cep"`
-	State   string `json:"uf"`
-	City    string `json:"cidade"`
-	Address string `json:"logradouro"`
+type Cep struct {
+	Cep     string
+	State   string
+	City    string
+	Address string
 	Server  string
 }
 
 func main() {
 
 	var cep string = "80320-040"
+	var server1 string = "https://viacep.com.br/ws/" + cep + "/json/"
+	var server2 string = "https://cdn.apicep.com/file/apicep/" + cep + ".json"
 
-	c1 := make(chan CepServer1)
-	c2 := make(chan CepServer2)
+	print(server1)
+
+	c1 := make(chan Cep)
+	c2 := make(chan Cep)
 
 	go func() {
-		result, err := GetCepServer1(cep)
+		result, err := GetCepServer(1, server1)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -43,7 +38,7 @@ func main() {
 	}()
 
 	go func() {
-		result2, err := GetCepServer2(cep)
+		result2, err := GetCepServer(2, server2)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -62,13 +57,11 @@ func main() {
 
 }
 
-func GetCepServer2(cep string) (*CepServer2, error) {
-
-	cep = strings.Replace(cep, "-", "", -1)
+func GetCepServer(serverId int, host string) (*Cep, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://viacep.com.br/ws/"+cep+"/json/", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", host, nil)
 
 	if err != nil {
 		fmt.Println("Erro ao criar a solicitação:", err)
@@ -89,49 +82,29 @@ func GetCepServer2(cep string) (*CepServer2, error) {
 		return nil, err
 	}
 
-	var data2 CepServer2
-	err = json.Unmarshal(body, &data2)
+	var data map[string]interface{}
+	err = json.Unmarshal([]byte(body), &data)
 	if err != nil {
-		fmt.Println("Erro ao fazer o parse da resposta:", err)
-	}
-
-	data2.Server = "Server 2"
-
-	return &data2, nil
-}
-
-func GetCepServer1(cep string) (*CepServer1, error) {
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://cdn.apicep.com/file/apicep/"+cep+".json", nil)
-
-	if err != nil {
-		fmt.Println("Erro ao criar a solicitação:", err)
+		fmt.Println("Erro ao decodificar JSON:", err)
 		return nil, err
 	}
 
-	client := http.DefaultClient
-	res, err := client.Do(req)
-	if err != nil {
-		fmt.Println("Erro ao fazer a solicitação:", err)
-		return nil, err
-	}
-	defer res.Body.Close()
+	if serverId == 1 {
+		return &Cep{
+			Cep:     data["cep"].(string),
+			State:   data["uf"].(string),
+			City:    data["localidade"].(string),
+			Address: data["logradouro"].(string),
+			Server:  "Server 1",
+		}, nil
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		fmt.Println("Erro ao ler o corpo da resposta:", err)
-		return nil, err
 	}
 
-	var data1 CepServer1
-	err = json.Unmarshal(body, &data1)
-	if err != nil {
-		fmt.Println("Erro ao fazer o parse da resposta:", err)
-	}
-
-	data1.Server = "Server 1"
-
-	return &data1, nil
+	return &Cep{
+		Cep:     data["code"].(string),
+		State:   data["state"].(string),
+		City:    data["city"].(string),
+		Address: data["address"].(string),
+		Server:  "Server 2",
+	}, nil
 }
