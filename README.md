@@ -1,15 +1,15 @@
- Neste desafio você terá que usar o que aprendemos com Multithreading e APIs para buscar o resultado mais rápido entre duas APIs distintas.
+In this challenge you will have to use what we learned with Multithreading and APIs to get the fastest result between two different APIs.
 
-As duas requisições serão feitas simultaneamente para as seguintes APIs:
+The two requests will be made simultaneously to the following APIs:
 
 https://cdn.apicep.com/file/apicep/" + cep + ".json
 
 http://viacep.com.br/ws/" + cep + "/json/
 
-Os requisitos para este desafio são:
+The requirements for this challenge are:
 
-- Acatar a API que entregar a resposta mais rápida e descartar a resposta mais lenta.
+- Accept the API that delivers the fastest response and discard the slowest response.
 
-- O resultado da request deverá ser exibido no command line, bem como qual API a enviou.
+- The result of the request should be displayed on the command line, as well as which API sent it.
 
-- Limitar o tempo de resposta em 1 segundo. Caso contrário, o erro de timeout deve ser exibido.
+- Limit response time to 1 second. Otherwise, the timeout error should be displayed.
